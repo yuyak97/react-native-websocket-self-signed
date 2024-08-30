@@ -5,10 +5,9 @@ import com.facebook.react.bridge.NativeModule
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.uimanager.ViewManager
 
-
-class WebsocketSelfSignedPackage : ReactPackage {
+class WebSocketSelfSignedPackage : ReactPackage {
   override fun createNativeModules(reactContext: ReactApplicationContext): List<NativeModule> {
-    return listOf(WebsocketSelfSignedModule(reactContext))
+    return listOf(WebSocketSelfSignedModule(reactContext))
   }
 
   override fun createViewManagers(reactContext: ReactApplicationContext): List<ViewManager<*, *>> {
