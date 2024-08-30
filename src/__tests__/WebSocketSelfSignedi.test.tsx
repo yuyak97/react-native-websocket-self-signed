@@ -14,19 +14,19 @@ jest.mock('../models/WebSocketSelfSignedNativeModule', () => ({
 describe('WebSocketSelfSigned', () => {
   let webSocket: WebSocketSelfSigned;
   let addListenerMock: jest.Mock;
-  let removeAllListenersMock: jest.Mock;
+  let listenerMock: { remove: jest.Mock };
 
   beforeEach(() => {
-    // Mock the addListener and removeAllListeners methods of NativeEventEmitter
+    // Mock the addListener method of NativeEventEmitter
     addListenerMock = jest.fn();
-    removeAllListenersMock = jest.fn();
+    listenerMock = { remove: jest.fn() };
 
     jest
       .spyOn(NativeEventEmitter.prototype, 'addListener')
-      .mockImplementation(addListenerMock);
-    jest
-      .spyOn(NativeEventEmitter.prototype, 'removeAllListeners')
-      .mockImplementation(removeAllListenersMock);
+      .mockImplementation((event, callback) => {
+        addListenerMock(event, callback);
+        return listenerMock as any;
+      });
 
     // Initialize the WebSocketSelfSigned instance
     webSocket = new WebSocketSelfSigned();
@@ -50,9 +50,16 @@ describe('WebSocketSelfSigned', () => {
     expect(WebSocketSelfSignedNativeModule.send).toHaveBeenCalledWith(message);
   });
 
-  it('should close the WebSocket connection', () => {
+  it('should close the WebSocket connection and remove all listeners', () => {
+    webSocket.onOpen(jest.fn());
+    webSocket.onMessage(jest.fn());
+    webSocket.onClose(jest.fn());
+    webSocket.onError(jest.fn());
+
     webSocket.close();
     expect(WebSocketSelfSignedNativeModule.close).toHaveBeenCalled();
+
+    expect(listenerMock.remove).toHaveBeenCalledTimes(4);
   });
 
   it('should register an onOpen event listener', () => {
@@ -88,8 +95,27 @@ describe('WebSocketSelfSigned', () => {
     );
   });
 
-  it('should remove all listeners for an event', () => {
-    webSocket.removeAllListeners(WebSocketEvent.CLOSE);
-    expect(removeAllListenersMock).toHaveBeenCalledWith(WebSocketEvent.CLOSE);
+  it('should remove the onOpen event listener', () => {
+    webSocket.onOpen(jest.fn()); // Ensure the listener is added
+    webSocket.removeOnOpenListener();
+    expect(listenerMock.remove).toHaveBeenCalled();
+  });
+
+  it('should remove the onMessage event listener', () => {
+    webSocket.onMessage(jest.fn()); // Ensure the listener is added
+    webSocket.removeOnMessageListener();
+    expect(listenerMock.remove).toHaveBeenCalled();
+  });
+
+  it('should remove the onClose event listener', () => {
+    webSocket.onClose(jest.fn()); // Ensure the listener is added
+    webSocket.removeOnCloseListener();
+    expect(listenerMock.remove).toHaveBeenCalled();
+  });
+
+  it('should remove the onError event listener', () => {
+    webSocket.onError(jest.fn()); // Ensure the listener is added
+    webSocket.removeOnErrorListener();
+    expect(listenerMock.remove).toHaveBeenCalled();
   });
 });
