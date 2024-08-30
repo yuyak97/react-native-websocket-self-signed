@@ -1,14 +1,8 @@
 #import <React/RCTBridgeModule.h>
+#import <React/RCTEventEmitter.h>
 
-@interface RCT_EXTERN_MODULE(WebsocketSelfSigned, NSObject)
-
-RCT_EXTERN_METHOD(multiply:(float)a withB:(float)b
-                 withResolver:(RCTPromiseResolveBlock)resolve
-                 withRejecter:(RCTPromiseRejectBlock)reject)
-
-+ (BOOL)requiresMainQueueSetup
-{
-  return NO;
-}
-
+@interface RCT_EXTERN_MODULE(WebSocketSelfSigned, RCTEventEmitter)
+RCT_EXTERN_METHOD(connect:(NSString *)url resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
+RCT_EXTERN_METHOD(send:(NSString *)message)
+RCT_EXTERN_METHOD(close)
 @end
