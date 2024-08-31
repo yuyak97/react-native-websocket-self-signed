@@ -1,4 +1,4 @@
-package com.websocketselfsigned
+package com.websocketwithselfsignedcert
 
 import com.facebook.react.bridge.*
 import com.facebook.react.modules.core.DeviceEventManagerModule
@@ -6,7 +6,7 @@ import okhttp3.*
 import java.security.cert.X509Certificate
 import javax.net.ssl.*
 
-class WebSocketSelfSignedModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
+class WebSocketWithSelfSignedCertModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
     private var webSocket: WebSocket? = null
     private val client: OkHttpClient
     private var listenerCount = 0
@@ -29,7 +29,7 @@ class WebSocketSelfSignedModule(reactContext: ReactApplicationContext) : ReactCo
     }
 
     override fun getName(): String {
-        return "WebSocketSelfSigned"
+        return "WebSocketWithSelfSignedCert"
     }
 
     @ReactMethod

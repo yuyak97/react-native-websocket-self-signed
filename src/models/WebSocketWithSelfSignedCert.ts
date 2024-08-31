@@ -1,20 +1,22 @@
 import { NativeEventEmitter, type EmitterSubscription } from 'react-native';
 import { WebSocketEvent } from '../enums/websocket-event.enum';
-import WebSocketSelfSignedNativeModule from './WebSocketSelfSignedNativeModule';
+import WebSocketWithSelfSignedCertNativeModule from './WebSocketWithSelfSignedCertNativeModule';
 
 /**
- * WebSocketSelfSigned provides a wrapper around native WebSocket functionality
+ * WebSocketWithSelfSignedCert provides a wrapper around native WebSocket functionality
  * with support for handling WebSocket events and managing self-signed certificates.
  */
-class WebSocketSelfSigned {
+class WebSocketWithSelfSignedCert {
   private eventEmitter: NativeEventEmitter;
   private listeners: { [key in WebSocketEvent]?: EmitterSubscription } = {};
 
   /**
-   * Initializes the WebSocketSelfSigned instance and sets up the NativeEventEmitter.
+   * Initializes the WebSocketWithSelfSignedCert instance and sets up the NativeEventEmitter.
    */
   constructor() {
-    this.eventEmitter = new NativeEventEmitter(WebSocketSelfSignedNativeModule);
+    this.eventEmitter = new NativeEventEmitter(
+      WebSocketWithSelfSignedCertNativeModule
+    );
   }
 
   /**
@@ -24,7 +26,7 @@ class WebSocketSelfSigned {
    * @returns A promise that resolves when the connection is successful.
    */
   connect(url: string): Promise<string> {
-    return WebSocketSelfSignedNativeModule.connect(url);
+    return WebSocketWithSelfSignedCertNativeModule.connect(url);
   }
 
   /**
@@ -33,14 +35,14 @@ class WebSocketSelfSigned {
    * @param message - The message to be sent to the server.
    */
   send(message: string): void {
-    WebSocketSelfSignedNativeModule.send(message);
+    WebSocketWithSelfSignedCertNativeModule.send(message);
   }
 
   /**
    * Closes the WebSocket connection and removes all event listeners.
    */
   close(): void {
-    WebSocketSelfSignedNativeModule.close();
+    WebSocketWithSelfSignedCertNativeModule.close();
     this.removeAllListeners();
   }
 
@@ -137,4 +139,4 @@ class WebSocketSelfSigned {
   }
 }
 
-export default WebSocketSelfSigned;
+export default WebSocketWithSelfSignedCert;

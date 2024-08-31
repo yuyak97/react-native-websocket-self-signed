@@ -1,13 +1,16 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View, Text, Button, Platform } from 'react-native';
-import WebSocketSelfSigned from 'react-native-websocket-self-signed';
+import WebSocketWithSelfSignedCert from 'react-native-websocket-self-signed';
 
 const App: React.FC = () => {
   const [connected, setConnected] = useState(false);
   const [messages, setMessages] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  const wsSelfSigned = useMemo(() => new WebSocketSelfSigned(), []);
+  const wsWithSelfSignedCert = useMemo(
+    () => new WebSocketWithSelfSignedCert(),
+    []
+  );
 
   const targetWebSocket =
     Platform.OS === 'android' ? 'wss://10.0.2.2:8443' : 'wss://localhost:8443';
@@ -17,10 +20,10 @@ const App: React.FC = () => {
     setError(null);
 
     // Connect to the WebSocket
-    wsSelfSigned
+    wsWithSelfSignedCert
       .connect(targetWebSocket)
       .then((data) => {
-        console.log('Connected to WebSocketSelfSigned', data);
+        console.log('Connected to WebSocketWithSelfSignedCert', data);
         setConnected(true);
       })
       .catch((err) => {
@@ -29,33 +32,33 @@ const App: React.FC = () => {
       });
 
     // Listen for the WebSocket open event
-    wsSelfSigned.onOpen(() => {
-      console.log('WebSocketSelfSigned opened');
+    wsWithSelfSignedCert.onOpen(() => {
+      console.log('WebSocketWithSelfSignedCert opened');
     });
 
     // Listen for messages from the server
-    wsSelfSigned.onMessage((message: string) => {
+    wsWithSelfSignedCert.onMessage((message: string) => {
       console.log('Received message:', message);
       setMessages((prevMessages) => [...prevMessages, message]);
     });
 
     // Listen for the WebSocket close event
-    wsSelfSigned.onClose(() => {
-      console.log('WebSocketSelfSigned closed');
+    wsWithSelfSignedCert.onClose(() => {
+      console.log('WebSocketWithSelfSignedCert closed');
       setConnected(false);
     });
 
     // Listen for WebSocket errors
-    wsSelfSigned.onError((err: string) => {
+    wsWithSelfSignedCert.onError((err: string) => {
       setError(`Failed to connect: ${err}`);
       console.log('Error state updated:', `Failed to connect: ${err}`);
     });
 
     // Return a cleanup function to close the connection and remove listeners
     return () => {
-      wsSelfSigned.close(); // Automatically removes listeners
+      wsWithSelfSignedCert.close(); // Automatically removes listeners
     };
-  }, [wsSelfSigned, targetWebSocket]);
+  }, [wsWithSelfSignedCert, targetWebSocket]);
 
   // Manage WebSocket connection and cleanup on component mount/unmount
   useEffect(() => {
@@ -64,25 +67,25 @@ const App: React.FC = () => {
     return () => {
       cleanup();
     };
-  }, [wsSelfSigned, webSocketConnect]);
+  }, [wsWithSelfSignedCert, webSocketConnect]);
 
   // Handler for sending messages
   const sendMessage = () => {
     console.log('CLICK send button');
-    wsSelfSigned.send('Repeat');
+    wsWithSelfSignedCert.send('Repeat');
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.status}>
         {connected
-          ? 'Connected to WebSocketSelfSigned'
-          : 'Disconnected from WebSocketSelfSigned'}
+          ? 'Connected to WebSocketWithSelfSignedCert'
+          : 'Disconnected from WebSocketWithSelfSignedCert'}
       </Text>
 
       {error && <Text style={styles.error}>{error}</Text>}
       <Button
-        title="Send Message (WebSocketSelfSigned)"
+        title="Send Message (WebSocketWithSelfSignedCert)"
         onPress={sendMessage}
         disabled={!connected}
       />

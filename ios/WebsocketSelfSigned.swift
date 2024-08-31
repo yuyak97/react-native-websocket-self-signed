@@ -1,13 +1,13 @@
 import Foundation
 import React
 
-@objc(WebSocketSelfSigned)
-class WebSocketSelfSigned: RCTEventEmitter {
+@objc(WebSocketWithSelfSignedCert)
+class WebSocketWithSelfSignedCert: RCTEventEmitter {
 
     private var webSocketTask: URLSessionWebSocketTask?
 
     // Add requiresMainQueueSetup in order to prevent the following warning:
-    // WARN  Module WebSocketSelfSigned requires main queue setup since it overrides `init` but doesn't implement `requiresMainQueueSetup`.
+    // WARN  Module WebSocketWithSelfSignedCert requires main queue setup since it overrides `init` but doesn't implement `requiresMainQueueSetup`.
     // In a future release React Native will default to initializing all native modules on a background thread unless explicitly opted-out of.
     @objc
     override static func requiresMainQueueSetup() -> Bool {
@@ -65,8 +65,10 @@ class WebSocketSelfSigned: RCTEventEmitter {
                 switch message {
                 case .string(let text):
                     self?.sendEvent(withName: "onMessage", body: text)
-                case .data(_):
-                    // Handle data if necessary
+                case .data(let data):
+                    // Handle binary data if necessary
+                    print("Received binary data: \(data.count) bytes")
+                    // Add custom handling logic here if needed
                     break
                 @unknown default:
                     break
@@ -81,7 +83,7 @@ class WebSocketSelfSigned: RCTEventEmitter {
     }
 }
 
-extension WebSocketSelfSigned: URLSessionDelegate {
+extension WebSocketWithSelfSignedCert: URLSessionDelegate {
     func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
         // If serverTrust is available, create a URLCredential and use it
         if let serverTrust = challenge.protectionSpace.serverTrust {

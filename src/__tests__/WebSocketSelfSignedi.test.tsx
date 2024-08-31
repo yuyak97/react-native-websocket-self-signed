@@ -1,9 +1,9 @@
 import { NativeEventEmitter } from 'react-native';
 import { WebSocketEvent } from '../enums/websocket-event.enum';
-import WebSocketSelfSigned from '../models/WebSocketSelfSigned';
-import WebSocketSelfSignedNativeModule from '../models/WebSocketSelfSignedNativeModule';
+import WebSocketWithSelfSignedCert from '../models/WebSocketWithSelfSignedCert';
+import WebSocketWithSelfSignedCertNativeModule from '../models/WebSocketWithSelfSignedCertNativeModule';
 
-jest.mock('../models/WebSocketSelfSignedNativeModule', () => ({
+jest.mock('../models/WebSocketWithSelfSignedCertNativeModule', () => ({
   connect: jest.fn(() => Promise.resolve('connected')),
   send: jest.fn(),
   close: jest.fn(),
@@ -11,8 +11,8 @@ jest.mock('../models/WebSocketSelfSignedNativeModule', () => ({
   removeListeners: jest.fn(),
 }));
 
-describe('WebSocketSelfSigned', () => {
-  let webSocket: WebSocketSelfSigned;
+describe('WebSocketWithSelfSignedCert', () => {
+  let webSocket: WebSocketWithSelfSignedCert;
   let addListenerMock: jest.Mock;
   let listenerMock: { remove: jest.Mock };
 
@@ -28,8 +28,8 @@ describe('WebSocketSelfSigned', () => {
         return listenerMock as any;
       });
 
-    // Initialize the WebSocketSelfSigned instance
-    webSocket = new WebSocketSelfSigned();
+    // Initialize the WebSocketWithSelfSignedCert instance
+    webSocket = new WebSocketWithSelfSignedCert();
   });
 
   afterEach(() => {
@@ -38,16 +38,18 @@ describe('WebSocketSelfSigned', () => {
 
   it('should connect to WebSocket server', async () => {
     const result = await webSocket.connect('ws://example.com');
-    expect(WebSocketSelfSignedNativeModule.connect).toHaveBeenCalledWith(
-      'ws://example.com'
-    );
+    expect(
+      WebSocketWithSelfSignedCertNativeModule.connect
+    ).toHaveBeenCalledWith('ws://example.com');
     expect(result).toBe('connected');
   });
 
   it('should send a message', () => {
     const message = 'Hello, World!';
     webSocket.send(message);
-    expect(WebSocketSelfSignedNativeModule.send).toHaveBeenCalledWith(message);
+    expect(WebSocketWithSelfSignedCertNativeModule.send).toHaveBeenCalledWith(
+      message
+    );
   });
 
   it('should close the WebSocket connection and remove all listeners', () => {
@@ -57,7 +59,7 @@ describe('WebSocketSelfSigned', () => {
     webSocket.onError(jest.fn());
 
     webSocket.close();
-    expect(WebSocketSelfSignedNativeModule.close).toHaveBeenCalled();
+    expect(WebSocketWithSelfSignedCertNativeModule.close).toHaveBeenCalled();
 
     expect(listenerMock.remove).toHaveBeenCalledTimes(4);
   });

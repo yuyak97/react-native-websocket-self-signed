@@ -1,5 +1,5 @@
 import { WebSocketEvent } from './enums/websocket-event.enum';
-import WebSocketSelfSigned from './models/WebSocketSelfSigned';
+import WebSocketWithSelfSignedCert from './models/WebSocketWithSelfSignedCert';
 
-export { WebSocketEvent, WebSocketSelfSigned };
-export default WebSocketSelfSigned;
+export { WebSocketEvent };
+export default WebSocketWithSelfSignedCert;

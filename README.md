@@ -59,26 +59,28 @@ npx expo prebuild
 ## Usage
 
 ```ts
-const wsSelfSigned = new WebSocketSelfSigned();
-const targetWebSocket = 'wss:example.com';
+import WebSocketWithSelfSignedCert from 'react-native-websocket-self-signed';
+
+const wsWithSelfSignedCert = new WebSocketWithSelfSignedCert();
+const targetWebSocket = 'wss://example.com';
 
 try {
-  await wsSelfSigned.connect(targetWebSocket);
-  console.log('Connected to WebSocketSelfSigned');
+  await wsWithSelfSignedCert.connect(targetWebSocket);
+  console.log('Connected to WebSocketWithSelfSignedCert');
 
-  wsSelfSigned.onOpen(() => {
-    console.log('WebSocketSelfSigned opened');
+  wsWithSelfSignedCert.onOpen(() => {
+    console.log('WebSocketWithSelfSignedCert opened');
   });
 
-  wsSelfSigned.onMessage((message: string) => {
+  wsWithSelfSignedCert.onMessage((message: string) => {
     console.log('Received message:', message);
   });
 
-  wsSelfSigned.onClose(() => {
-    console.log('WebSocketSelfSigned closed');
+  wsWithSelfSignedCert.onClose(() => {
+    console.log('WebSocketWithSelfSignedCert closed');
   });
 
-  wsSelfSigned.onError((err: string) => {
+  wsWithSelfSignedCert.onError((err: string) => {
     console.error('Failed to connect:', err);
   });
 } catch (err) {
@@ -87,7 +89,7 @@ try {
 
 // Clean-up when done
 return () => {
-  wsSelfSigned.close();
+  wsWithSelfSignedCert.close();
 };
 ```
 
