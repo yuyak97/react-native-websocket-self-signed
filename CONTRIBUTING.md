@@ -47,6 +47,8 @@ To run the example app on iOS:
 yarn example ios
 ```
 
+Additionally for local development, it's recommended to start a local WebSocket server as well in order to test WebSocket connection.
+
 Make sure your code passes TypeScript and ESLint. Run the following to verify:
 
 ```sh
