@@ -57,11 +57,12 @@ describe('WebSocketWithSelfSignedCert', () => {
     webSocket.onMessage(jest.fn());
     webSocket.onClose(jest.fn());
     webSocket.onError(jest.fn());
+    webSocket.onBinaryMessage(jest.fn());
 
     webSocket.close();
     expect(WebSocketWithSelfSignedCertNativeModule.close).toHaveBeenCalled();
 
-    expect(listenerMock.remove).toHaveBeenCalledTimes(4);
+    expect(listenerMock.remove).toHaveBeenCalledTimes(5);
   });
 
   it('should register an onOpen event listener', () => {

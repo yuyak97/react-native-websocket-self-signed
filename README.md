@@ -93,9 +93,11 @@ return () => {
 };
 ```
 
-You can check an example here
+You can check this whole example here.
 
 - [./example/src/App.tsx](./example/src/App.tsx)
+
+To run the example, start the WebSocket server by following the instructions provided in [WEB_SOCKET_SERVER_FOR_DEV.md](./docs/WEB_SOCKET_SERVER_FOR_DEV.md).
 
 ## Contributing
 

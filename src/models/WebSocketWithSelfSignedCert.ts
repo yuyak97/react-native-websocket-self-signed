@@ -71,6 +71,16 @@ class WebSocketWithSelfSignedCert {
   }
 
   /**
+   * Registers a callback to be invoked when binary data is received from the server.
+   *
+   * @param callback - The callback function to be called on the 'binaryMessage' event.
+   */
+  onBinaryMessage(callback: (data: Uint8Array) => void): void {
+    this.listeners[WebSocketEvent.BINARY_MESSAGE] =
+      this.eventEmitter.addListener(WebSocketEvent.BINARY_MESSAGE, callback);
+  }
+
+  /**
    * Registers a callback to be invoked when the WebSocket connection is closed.
    *
    * @param callback - The callback function to be called on the 'close' event.
@@ -120,6 +130,14 @@ class WebSocketWithSelfSignedCert {
   removeOnMessageListener(): void {
     this.listeners[WebSocketEvent.MESSAGE]?.remove();
     delete this.listeners[WebSocketEvent.MESSAGE];
+  }
+
+  /**
+   * Removes the listener for the 'binaryMessage' event.
+   */
+  removeOnBinaryMessageListener(): void {
+    this.listeners[WebSocketEvent.BINARY_MESSAGE]?.remove();
+    delete this.listeners[WebSocketEvent.BINARY_MESSAGE];
   }
 
   /**

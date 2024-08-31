@@ -1,7 +1,7 @@
 /**
- * The expected interface of the WssSelfSigned native module.
+ * The expected interface of the WebSocketWithSelfSignedCert native module.
  */
-export interface WebSocketSelfSignedNativeModule {
+export interface WebSocketWithSelfSignedCertNativeModuleType {
   connect(url: string): Promise<string>;
   send(message: string): void;
   close(): void;

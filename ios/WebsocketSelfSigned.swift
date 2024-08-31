@@ -66,10 +66,8 @@ class WebSocketWithSelfSignedCert: RCTEventEmitter {
                 case .string(let text):
                     self?.sendEvent(withName: "onMessage", body: text)
                 case .data(let data):
-                    // Handle binary data if necessary
-                    print("Received binary data: \(data.count) bytes")
-                    // Add custom handling logic here if needed
-                    break
+                    // Handle binary data
+                    self?.sendEvent(withName: "onBinaryMessage", body: data.base64EncodedString())
                 @unknown default:
                     break
                 }
@@ -79,7 +77,7 @@ class WebSocketWithSelfSignedCert: RCTEventEmitter {
     }
 
     override func supportedEvents() -> [String]! {
-        return ["onOpen", "onMessage", "onClose", "onError"]
+        return ["onOpen", "onMessage", "onClose", "onError", "onBinaryMessage"]
     }
 }
 

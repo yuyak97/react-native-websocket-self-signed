@@ -3,6 +3,8 @@ package com.websocketwithselfsignedcert
 import com.facebook.react.bridge.*
 import com.facebook.react.modules.core.DeviceEventManagerModule
 import okhttp3.*
+import okio.ByteString
+import okio.ByteString.Companion.decodeBase64
 import java.security.cert.X509Certificate
 import javax.net.ssl.*
 
@@ -41,8 +43,13 @@ class WebSocketWithSelfSignedCertModule(reactContext: ReactApplicationContext) :
                 promise.resolve("Connected")
             }
 
-            override fun onMessage(webSocket: WebSocket, text: String) {
-                sendEvent("onMessage", text)
+            override fun onMessage(webSocket: WebSocket, message: String) {
+                sendEvent("onMessage", message)
+            }
+
+            override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
+                val base64Data = bytes.base64()
+                sendEvent("onBinaryMessage", base64Data)
             }
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {

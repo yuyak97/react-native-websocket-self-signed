@@ -1,25 +1,37 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { StyleSheet, View, Text, Button, Platform } from 'react-native';
+import {
+  StyleSheet,
+  View,
+  Text,
+  Button,
+  Platform,
+  TextInput,
+  ScrollView,
+  Image,
+} from 'react-native';
 import WebSocketWithSelfSignedCert from 'react-native-websocket-self-signed';
 
 const App: React.FC = () => {
   const [connected, setConnected] = useState(false);
   const [messages, setMessages] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [topic, setTopic] = useState<string>('Repeat');
+  const [payload, setPayload] = useState<string>('Hello, World!');
+  const [receivedImage, setReceivedImage] = useState<string | null>(null);
 
   const wsWithSelfSignedCert = useMemo(
     () => new WebSocketWithSelfSignedCert(),
     []
   );
 
+  // In order to use this example, please set up local web socket server.
+  // Please check /docs/WEB_SOCKET_SERVER_FOR_DEV.md
   const targetWebSocket =
     Platform.OS === 'android' ? 'wss://10.0.2.2:8443' : 'wss://localhost:8443';
 
   const webSocketConnect = useCallback(() => {
-    // Reset error state before attempting to connect
     setError(null);
 
-    // Connect to the WebSocket
     wsWithSelfSignedCert
       .connect(targetWebSocket)
       .then((data) => {
@@ -31,36 +43,36 @@ const App: React.FC = () => {
         setError('Failed to connect: ' + err);
       });
 
-    // Listen for the WebSocket open event
     wsWithSelfSignedCert.onOpen(() => {
-      console.log('WebSocketWithSelfSignedCert opened');
+      console.log('WebSocket connection opened');
     });
 
-    // Listen for messages from the server
     wsWithSelfSignedCert.onMessage((message: string) => {
       console.log('Received message:', message);
       setMessages((prevMessages) => [...prevMessages, message]);
     });
 
-    // Listen for the WebSocket close event
+    wsWithSelfSignedCert.onBinaryMessage((data: Uint8Array) => {
+      console.log('Received binary data');
+      const base64String = `data:image/jpeg;base64,${data}`;
+      setReceivedImage(base64String);
+    });
+
     wsWithSelfSignedCert.onClose(() => {
-      console.log('WebSocketWithSelfSignedCert closed');
+      console.log('WebSocket connection closed');
       setConnected(false);
     });
 
-    // Listen for WebSocket errors
     wsWithSelfSignedCert.onError((err: string) => {
       setError(`Failed to connect: ${err}`);
       console.log('Error state updated:', `Failed to connect: ${err}`);
     });
 
-    // Return a cleanup function to close the connection and remove listeners
     return () => {
-      wsWithSelfSignedCert.close(); // Automatically removes listeners
+      wsWithSelfSignedCert.close();
     };
   }, [wsWithSelfSignedCert, targetWebSocket]);
 
-  // Manage WebSocket connection and cleanup on component mount/unmount
   useEffect(() => {
     const cleanup = webSocketConnect();
 
@@ -69,10 +81,9 @@ const App: React.FC = () => {
     };
   }, [wsWithSelfSignedCert, webSocketConnect]);
 
-  // Handler for sending messages
   const sendMessage = () => {
-    console.log('CLICK send button');
-    wsWithSelfSignedCert.send('Repeat');
+    console.log('Sending message with topic and payload:', { topic, payload });
+    wsWithSelfSignedCert.send(JSON.stringify({ topic, payload }));
   };
 
   return (
@@ -84,18 +95,40 @@ const App: React.FC = () => {
       </Text>
 
       {error && <Text style={styles.error}>{error}</Text>}
+
+      <TextInput
+        style={styles.input}
+        placeholder="Enter topic"
+        value={topic}
+        onChangeText={setTopic}
+      />
+
+      <TextInput
+        style={styles.input}
+        placeholder="Enter payload"
+        value={payload}
+        onChangeText={setPayload}
+      />
+
       <Button
-        title="Send Message (WebSocketWithSelfSignedCert)"
+        title="Send Message"
         onPress={sendMessage}
         disabled={!connected}
       />
-      <View style={styles.messages}>
-        {messages.map((msg, index) => (
-          <Text key={index} style={styles.message}>
-            {msg}
-          </Text>
-        ))}
-      </View>
+
+      <ScrollView style={styles.scrollView}>
+        {receivedImage && (
+          <Image source={{ uri: receivedImage }} style={styles.image} />
+        )}
+
+        <View style={styles.messages}>
+          {messages.map((msg, index) => (
+            <Text key={index} style={styles.message}>
+              {msg}
+            </Text>
+          ))}
+        </View>
+      </ScrollView>
     </View>
   );
 };
@@ -116,13 +149,29 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     textAlign: 'center',
   },
-  messages: {
+  input: {
+    height: 40,
+    borderColor: 'gray',
+    borderWidth: 1,
+    marginBottom: 16,
+    paddingHorizontal: 8,
+  },
+  scrollView: {
     marginTop: 16,
+    flex: 1,
+  },
+  messages: {
+    marginBottom: 16,
   },
   message: {
     padding: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#ccc',
+  },
+  image: {
+    width: '100%',
+    height: 200,
+    marginBottom: 16,
   },
 });
 
