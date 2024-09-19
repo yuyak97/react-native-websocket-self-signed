@@ -64,33 +64,42 @@ import WebSocketWithSelfSignedCert from 'react-native-websocket-self-signed';
 const wsWithSelfSignedCert = new WebSocketWithSelfSignedCert();
 const targetWebSocket = 'wss://example.com';
 
-try {
-  await wsWithSelfSignedCert.connect(targetWebSocket);
-  console.log('Connected to WebSocketWithSelfSignedCert');
+ wsWithSelfSignedCert.onOpen(() => {
+      console.log('WebSocket connection opened');
+    });
 
-  wsWithSelfSignedCert.onOpen(() => {
-    console.log('WebSocketWithSelfSignedCert opened');
-  });
+    wsWithSelfSignedCert.onMessage((message: string) => {
+      console.log('Received message:', message);
+    });
 
-  wsWithSelfSignedCert.onMessage((message: string) => {
-    console.log('Received message:', message);
-  });
+    wsWithSelfSignedCert.onBinaryMessage((data: Uint8Array) => {
+      console.log('Received binary data');
+      const base64String = `data:image/jpeg;base64,${data}`;
+    });
 
-  wsWithSelfSignedCert.onClose(() => {
-    console.log('WebSocketWithSelfSignedCert closed');
-  });
+    wsWithSelfSignedCert.onClose(() => {
+      console.log('WebSocket connection closed');
+    });
 
-  wsWithSelfSignedCert.onError((err: string) => {
-    console.error('Failed to connect:', err);
-  });
-} catch (err) {
-  console.error('Failed to connect:', err);
-}
+    wsWithSelfSignedCert.onError((err: string) => {
+      console.log('Error state updated:', `Failed to connect: ${err}`);
+    });
 
-// Clean-up when done
-return () => {
-  wsWithSelfSignedCert.close();
-};
+    wsWithSelfSignedCert
+      .connect(targetWebSocket)
+      .then((data) => {
+        console.log('Connected to WebSocketWithSelfSignedCert', data);
+      })
+      .catch((err) => {
+        console.error('Failed to connect: ' + err);
+      });
+
+    return () => {
+      wsWithSelfSignedCert.close();
+    };
+
+
+wsWithSelfSignedCert.send("message"));
 ```
 
 You can check this whole example here.

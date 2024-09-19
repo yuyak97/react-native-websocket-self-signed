@@ -32,17 +32,6 @@ const App: React.FC = () => {
   const webSocketConnect = useCallback(() => {
     setError(null);
 
-    wsWithSelfSignedCert
-      .connect(targetWebSocket)
-      .then((data) => {
-        console.log('Connected to WebSocketWithSelfSignedCert', data);
-        setConnected(true);
-      })
-      .catch((err) => {
-        console.error('Failed to connect: ' + err);
-        setError('Failed to connect: ' + err);
-      });
-
     wsWithSelfSignedCert.onOpen(() => {
       console.log('WebSocket connection opened');
     });
@@ -67,6 +56,17 @@ const App: React.FC = () => {
       setError(`Failed to connect: ${err}`);
       console.log('Error state updated:', `Failed to connect: ${err}`);
     });
+
+    wsWithSelfSignedCert
+      .connect(targetWebSocket)
+      .then((data) => {
+        console.log('Connected to WebSocketWithSelfSignedCert', data);
+        setConnected(true);
+      })
+      .catch((err) => {
+        console.error('Failed to connect: ' + err);
+        setError('Failed to connect: ' + err);
+      });
 
     return () => {
       wsWithSelfSignedCert.close();
