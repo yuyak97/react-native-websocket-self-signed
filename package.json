@@ -1,6 +1,6 @@
 {
   "name": "react-native-websocket-self-signed",
-  "version": "0.1.0",
+  "version": "0.2.1",
   "description": "provides support for secure WebSocket (wss://) connections with self-signed certificates. This package allows developers to seamlessly establish secure WebSocket communication in their React Native applications, even when using self-signed SSL/TLS certificates, which are typically not trusted by default. Ideal for development environments and internal applications where secure communication is necessary without the need for a publicly trusted certificate authority.",
   "source": "./src/index.tsx",
   "main": "./lib/commonjs/index.js",

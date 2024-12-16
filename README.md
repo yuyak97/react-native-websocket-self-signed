@@ -68,35 +68,35 @@ const targetWebSocket = 'wss://example.com';
       console.log('WebSocket connection opened');
     });
 
-    wsWithSelfSignedCert.onMessage((message: string) => {
-      console.log('Received message:', message);
+  wsWithSelfSignedCert.onMessage((message: string) => {
+    console.log('Received message:', message);
+  });
+
+  wsWithSelfSignedCert.onBinaryMessage((data: Uint8Array) => {
+    console.log('Received binary data');
+    const base64String = `data:image/jpeg;base64,${data}`;
+  });
+
+  wsWithSelfSignedCert.onClose(() => {
+    console.log('WebSocket connection closed');
+  });
+
+  wsWithSelfSignedCert.onError((err: string) => {
+    console.log('Error state updated:', `Failed to connect: ${err}`);
+  });
+
+  wsWithSelfSignedCert
+    .connect(targetWebSocket)
+    .then((data) => {
+      console.log('Connected to WebSocketWithSelfSignedCert', data);
+    })
+    .catch((err) => {
+      console.error('Failed to connect: ' + err);
     });
 
-    wsWithSelfSignedCert.onBinaryMessage((data: Uint8Array) => {
-      console.log('Received binary data');
-      const base64String = `data:image/jpeg;base64,${data}`;
-    });
-
-    wsWithSelfSignedCert.onClose(() => {
-      console.log('WebSocket connection closed');
-    });
-
-    wsWithSelfSignedCert.onError((err: string) => {
-      console.log('Error state updated:', `Failed to connect: ${err}`);
-    });
-
-    wsWithSelfSignedCert
-      .connect(targetWebSocket)
-      .then((data) => {
-        console.log('Connected to WebSocketWithSelfSignedCert', data);
-      })
-      .catch((err) => {
-        console.error('Failed to connect: ' + err);
-      });
-
-    return () => {
-      wsWithSelfSignedCert.close();
-    };
+  return () => {
+    wsWithSelfSignedCert.close();
+  };
 
 
 wsWithSelfSignedCert.send("message"));
