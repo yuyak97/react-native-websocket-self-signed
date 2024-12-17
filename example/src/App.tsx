@@ -58,7 +58,7 @@ const App: React.FC = () => {
     });
 
     wsWithSelfSignedCert
-      .connect(targetWebSocket)
+      .connect(targetWebSocket, { Authorization: 'Bearer your_token' })
       .then((data) => {
         console.log('Connected to WebSocketWithSelfSignedCert', data);
         setConnected(true);

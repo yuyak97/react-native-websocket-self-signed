@@ -40,7 +40,16 @@ describe('WebSocketWithSelfSignedCert', () => {
     const result = await webSocket.connect('ws://example.com');
     expect(
       WebSocketWithSelfSignedCertNativeModule.connect
-    ).toHaveBeenCalledWith('ws://example.com');
+    ).toHaveBeenCalledWith('ws://example.com', {});
+    expect(result).toBe('connected');
+  });
+
+  it('should connect to WebSocket server with header', async () => {
+    const header = { Authorization: 'Bearer your_token' };
+    const result = await webSocket.connect('ws://example.com', header);
+    expect(
+      WebSocketWithSelfSignedCertNativeModule.connect
+    ).toHaveBeenCalledWith('ws://example.com', header);
     expect(result).toBe('connected');
   });
 

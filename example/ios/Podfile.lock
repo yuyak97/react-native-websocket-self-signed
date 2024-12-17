@@ -1209,7 +1209,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - react-native-websocket-self-signed (0.1.0):
+  - react-native-websocket-self-signed (0.2.1):
     - DoubleConversion
     - glog
     - RCT-Folly (= 2024.01.01.00)
@@ -1739,7 +1739,7 @@ SPEC CHECKSUMS:
   React-logger: 8db32983d75dc2ad54f278f344ccb9b256e694fc
   React-Mapbuffer: 1c08607305558666fd16678b85ef135e455d5c96
   React-microtasksnativemodule: e8efd9e5df1ab51a58e45326b98787cf21d47e6e
-  react-native-websocket-self-signed: f93db5f01425e820b8e718ed514c0355b95393c8
+  react-native-websocket-self-signed: b6400162dcd9e6c2480f552620c50a81170371a8
   React-nativeconfig: 57781b79e11d5af7573e6f77cbf1143b71802a6d
   React-NativeModulesApple: e35ceb132b4005f4bb8924a3a87b9fd3c21b15ee
   React-perflogger: 8a360ccf603de6ddbe9ff8f54383146d26e6c936

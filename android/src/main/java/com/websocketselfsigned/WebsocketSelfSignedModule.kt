@@ -4,7 +4,6 @@ import com.facebook.react.bridge.*
 import com.facebook.react.modules.core.DeviceEventManagerModule
 import okhttp3.*
 import okio.ByteString
-import okio.ByteString.Companion.decodeBase64
 import java.security.cert.X509Certificate
 import javax.net.ssl.*
 
@@ -34,9 +33,27 @@ class WebSocketWithSelfSignedCertModule(reactContext: ReactApplicationContext) :
         return "WebSocketWithSelfSignedCert"
     }
 
+    /**
+     * Connect to the specified WebSocket URL with optional headers.
+     * Example call from JS:
+     * WebSocketWithSelfSignedCert.connect("wss://your-url", { Authorization: "Bearer token", "Custom-Header": "Value" })
+     */
     @ReactMethod
-    fun connect(url: String, promise: Promise) {
-        val request = Request.Builder().url(url).build()
+    fun connect(url: String, headers: ReadableMap, promise: Promise) {
+        val requestBuilder = Request.Builder().url(url)
+
+        // Add headers from the ReadableMap
+        val iterator = headers.keySetIterator()
+        while (iterator.hasNextKey()) {
+            val key = iterator.nextKey()
+            val value = headers.getString(key)
+            if (value != null) {
+                requestBuilder.addHeader(key, value)
+            }
+        }
+
+        val request = requestBuilder.build()
+
         webSocket = client.newWebSocket(request, object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
                 sendEvent("onOpen", null)

@@ -20,13 +20,14 @@ class WebSocketWithSelfSignedCert {
   }
 
   /**
-   * Connects to the WebSocket server at the given URL.
+   * Connects to the WebSocket server at the given URL with optional headers.
    *
    * @param url - The WebSocket server URL to connect to.
+   * @param headers - Optional headers to include in the connection request.
    * @returns A promise that resolves when the connection is successful.
    */
-  connect(url: string): Promise<string> {
-    return WebSocketWithSelfSignedCertNativeModule.connect(url);
+  connect(url: string, headers?: { [key: string]: string }): Promise<string> {
+    return WebSocketWithSelfSignedCertNativeModule.connect(url, headers || {});
   }
 
   /**

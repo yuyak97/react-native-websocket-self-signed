@@ -16,16 +16,28 @@ class WebSocketWithSelfSignedCert: RCTEventEmitter {
     }
 
     @objc
-    func connect(_ url: String, resolver resolve: @escaping RCTPromiseResolveBlock, rejecter reject: @escaping RCTPromiseRejectBlock) {
+    func connect(_ url: String,
+                 headers: [String: String]?,
+                 resolver resolve: @escaping RCTPromiseResolveBlock,
+                 rejecter reject: @escaping RCTPromiseRejectBlock) {
         guard let nsUrl = URL(string: url) else {
             reject("Invalid URL", "The provided URL is not valid", nil)
             return
         }
 
+        // Create a URLRequest so we can add headers
+        var request = URLRequest(url: nsUrl)
+        if let headers = headers {
+            for (key, value) in headers {
+                request.addValue(value, forHTTPHeaderField: key)
+            }
+        }
+
         let sessionConfig = URLSessionConfiguration.default
         let session = URLSession(configuration: sessionConfig, delegate: self, delegateQueue: nil)
 
-        webSocketTask = session.webSocketTask(with: nsUrl)
+        // Use request to create the WebSocketTask
+        webSocketTask = session.webSocketTask(with: request)
         webSocketTask?.resume()
 
         // Set the connection state to true
@@ -89,7 +101,9 @@ class WebSocketWithSelfSignedCert: RCTEventEmitter {
 }
 
 extension WebSocketWithSelfSignedCert: URLSessionDelegate {
-    func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
+    func urlSession(_ session: URLSession,
+                    didReceive challenge: URLAuthenticationChallenge,
+                    completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
         // Bypass SSL certificate validation and accept any certificate
         if let serverTrust = challenge.protectionSpace.serverTrust {
             let credential = URLCredential(trust: serverTrust)
