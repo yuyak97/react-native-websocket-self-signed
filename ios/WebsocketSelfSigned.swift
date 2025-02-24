@@ -69,31 +69,45 @@ class WebSocketWithSelfSignedCert: RCTEventEmitter {
     func close() {
         webSocketTask?.cancel(with: .normalClosure, reason: nil)
         isConnected = false
-        sendEvent(withName: "onClose", body: nil)
+        webSocketTask = nil
+        DispatchQueue.main.async {
+            guard let _ = self.bridge else { return }
+            self.sendEvent(withName: "onClose", body: nil)
+        }
     }
 
-    private func listenForMessages() {
+   private func listenForMessages() {
         webSocketTask?.receive { [weak self] result in
-            guard let self = self else { return }
+        guard let self = self else { return }
 
-            switch result {
-            case .failure(let error):
-                self.isConnected = false
+        switch result {
+        case .failure(let error):
+            self.isConnected = false
+            DispatchQueue.main.async {
+                guard let _ = self.bridge else { return }
                 self.sendEvent(withName: "onError", body: error.localizedDescription)
-            case .success(let message):
+            }
+
+        case .success(let message):
+            DispatchQueue.main.async {
+                guard let _ = self.bridge else { return }
+
                 switch message {
                 case .string(let text):
                     self.sendEvent(withName: "onMessage", body: text)
                 case .data(let data):
                     self.sendEvent(withName: "onBinaryMessage", body: data.base64EncodedString())
                 @unknown default:
+                    // No-op, or handle future message types
                     break
                 }
-                // Continue listening for the next message
-                self.listenForMessages()
             }
+
+            // Continue listening for the next message
+            self.listenForMessages()
         }
     }
+}
 
     override func supportedEvents() -> [String]! {
         return ["onOpen", "onMessage", "onClose", "onError", "onBinaryMessage"]
