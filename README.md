@@ -58,7 +58,7 @@ npx expo prebuild
 
 ## Usage
 
-### Version < 0.4.0
+### Version <= 0.4.0
 
 From version 0.4.0, support for multiple concurrent WebSocket connections was added.
 Each connection is managed independently using `WebSocketWithSelfSignedCert.getInstance(url)`.
