@@ -15,6 +15,7 @@ describe('WebSocketWithSelfSignedCert', () => {
   let webSocket: WebSocketWithSelfSignedCert;
   let addListenerMock: jest.Mock;
   let listenerMock: { remove: jest.Mock };
+  const testUrl = 'ws://example.com';
 
   beforeEach(() => {
     // Mock the addListener method of NativeEventEmitter
@@ -28,8 +29,8 @@ describe('WebSocketWithSelfSignedCert', () => {
         return listenerMock as any;
       });
 
-    // Initialize the WebSocketWithSelfSignedCert instance
-    webSocket = new WebSocketWithSelfSignedCert();
+    // Use getInstance to obtain the WebSocket instance
+    webSocket = WebSocketWithSelfSignedCert.getInstance(testUrl);
   });
 
   afterEach(() => {
@@ -37,19 +38,19 @@ describe('WebSocketWithSelfSignedCert', () => {
   });
 
   it('should connect to WebSocket server', async () => {
-    const result = await webSocket.connect('ws://example.com');
+    const result = await webSocket.connect();
     expect(
       WebSocketWithSelfSignedCertNativeModule.connect
-    ).toHaveBeenCalledWith('ws://example.com', {});
+    ).toHaveBeenCalledWith(testUrl, {});
     expect(result).toBe('connected');
   });
 
   it('should connect to WebSocket server with header', async () => {
     const header = { Authorization: 'Bearer your_token' };
-    const result = await webSocket.connect('ws://example.com', header);
+    const result = await webSocket.connect(header);
     expect(
       WebSocketWithSelfSignedCertNativeModule.connect
-    ).toHaveBeenCalledWith('ws://example.com', header);
+    ).toHaveBeenCalledWith(testUrl, header);
     expect(result).toBe('connected');
   });
 
@@ -57,6 +58,7 @@ describe('WebSocketWithSelfSignedCert', () => {
     const message = 'Hello, World!';
     webSocket.send(message);
     expect(WebSocketWithSelfSignedCertNativeModule.send).toHaveBeenCalledWith(
+      testUrl,
       message
     );
   });
@@ -69,15 +71,19 @@ describe('WebSocketWithSelfSignedCert', () => {
     webSocket.onBinaryMessage(jest.fn());
 
     webSocket.close();
-    expect(WebSocketWithSelfSignedCertNativeModule.close).toHaveBeenCalled();
-
+    expect(WebSocketWithSelfSignedCertNativeModule.close).toHaveBeenCalledWith(
+      testUrl
+    );
     expect(listenerMock.remove).toHaveBeenCalledTimes(5);
   });
 
   it('should register an onOpen event listener', () => {
     const callback = jest.fn();
     webSocket.onOpen(callback);
-    expect(addListenerMock).toHaveBeenCalledWith(WebSocketEvent.OPEN, callback);
+    expect(addListenerMock).toHaveBeenCalledWith(
+      WebSocketEvent.OPEN,
+      expect.any(Function)
+    );
   });
 
   it('should register an onMessage event listener', () => {
@@ -85,7 +91,16 @@ describe('WebSocketWithSelfSignedCert', () => {
     webSocket.onMessage(callback);
     expect(addListenerMock).toHaveBeenCalledWith(
       WebSocketEvent.MESSAGE,
-      callback
+      expect.any(Function)
+    );
+  });
+
+  it('should register an onBinaryMessage event listener', () => {
+    const callback = jest.fn();
+    webSocket.onBinaryMessage(callback);
+    expect(addListenerMock).toHaveBeenCalledWith(
+      WebSocketEvent.BINARY_MESSAGE,
+      expect.any(Function)
     );
   });
 
@@ -94,7 +109,7 @@ describe('WebSocketWithSelfSignedCert', () => {
     webSocket.onClose(callback);
     expect(addListenerMock).toHaveBeenCalledWith(
       WebSocketEvent.CLOSE,
-      callback
+      expect.any(Function)
     );
   });
 
@@ -103,30 +118,36 @@ describe('WebSocketWithSelfSignedCert', () => {
     webSocket.onError(callback);
     expect(addListenerMock).toHaveBeenCalledWith(
       WebSocketEvent.ERROR,
-      callback
+      expect.any(Function)
     );
   });
 
   it('should remove the onOpen event listener', () => {
-    webSocket.onOpen(jest.fn()); // Ensure the listener is added
+    webSocket.onOpen(jest.fn());
     webSocket.removeOnOpenListener();
     expect(listenerMock.remove).toHaveBeenCalled();
   });
 
   it('should remove the onMessage event listener', () => {
-    webSocket.onMessage(jest.fn()); // Ensure the listener is added
+    webSocket.onMessage(jest.fn());
     webSocket.removeOnMessageListener();
     expect(listenerMock.remove).toHaveBeenCalled();
   });
 
+  it('should remove the onBinaryMessage event listener', () => {
+    webSocket.onBinaryMessage(jest.fn());
+    webSocket.removeOnBinaryMessageListener();
+    expect(listenerMock.remove).toHaveBeenCalled();
+  });
+
   it('should remove the onClose event listener', () => {
-    webSocket.onClose(jest.fn()); // Ensure the listener is added
+    webSocket.onClose(jest.fn());
     webSocket.removeOnCloseListener();
     expect(listenerMock.remove).toHaveBeenCalled();
   });
 
   it('should remove the onError event listener', () => {
-    webSocket.onError(jest.fn()); // Ensure the listener is added
+    webSocket.onError(jest.fn());
     webSocket.removeOnErrorListener();
     expect(listenerMock.remove).toHaveBeenCalled();
   });
