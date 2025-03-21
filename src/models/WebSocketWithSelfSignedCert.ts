@@ -4,47 +4,66 @@ import WebSocketWithSelfSignedCertNativeModule from './WebSocketWithSelfSignedCe
 
 /**
  * WebSocketWithSelfSignedCert provides a wrapper around native WebSocket functionality
- * with support for handling WebSocket events and managing self-signed certificates.
+ * with support for handling multiple WebSocket connections and self-signed certificates.
  */
 class WebSocketWithSelfSignedCert {
   private eventEmitter: NativeEventEmitter;
   private listeners: { [key in WebSocketEvent]?: EmitterSubscription } = {};
+  private static instances: Map<string, WebSocketWithSelfSignedCert> =
+    new Map();
+
+  /**
+   * Retrieves an instance of WebSocketWithSelfSignedCert for a given URL.
+   * If an instance does not exist, a new one is created.
+   *
+   * @param url - The WebSocket server URL.
+   * @returns The WebSocket instance associated with the given URL.
+   */
+  static getInstance(url: string): WebSocketWithSelfSignedCert {
+    if (!this.instances.has(url)) {
+      this.instances.set(url, new WebSocketWithSelfSignedCert(url));
+    }
+    return this.instances.get(url)!;
+  }
 
   /**
    * Initializes the WebSocketWithSelfSignedCert instance and sets up the NativeEventEmitter.
    */
-  constructor() {
+  private constructor(private url: string) {
     this.eventEmitter = new NativeEventEmitter(
       WebSocketWithSelfSignedCertNativeModule
     );
   }
 
   /**
-   * Connects to the WebSocket server at the given URL with optional headers.
+   * Connects to the WebSocket server at the specified URL with optional headers.
    *
-   * @param url - The WebSocket server URL to connect to.
    * @param headers - Optional headers to include in the connection request.
    * @returns A promise that resolves when the connection is successful.
    */
-  connect(url: string, headers?: { [key: string]: string }): Promise<string> {
-    return WebSocketWithSelfSignedCertNativeModule.connect(url, headers || {});
+  connect(headers?: { [key: string]: string }): Promise<string> {
+    return WebSocketWithSelfSignedCertNativeModule.connect(
+      this.url,
+      headers || {}
+    );
   }
 
   /**
-   * Sends a message through the WebSocket connection.
+   * Sends a message through the WebSocket connection for the given URL.
    *
    * @param message - The message to be sent to the server.
    */
   send(message: string): void {
-    WebSocketWithSelfSignedCertNativeModule.send(message);
+    WebSocketWithSelfSignedCertNativeModule.send(this.url, message);
   }
 
   /**
-   * Closes the WebSocket connection and removes all event listeners.
+   * Closes the WebSocket connection for the given URL and removes all event listeners.
    */
   close(): void {
-    WebSocketWithSelfSignedCertNativeModule.close();
+    WebSocketWithSelfSignedCertNativeModule.close(this.url);
     this.removeAllListeners();
+    WebSocketWithSelfSignedCert.instances.delete(this.url);
   }
 
   /**
@@ -55,7 +74,11 @@ class WebSocketWithSelfSignedCert {
   onOpen(callback: () => void): void {
     this.listeners[WebSocketEvent.OPEN] = this.eventEmitter.addListener(
       WebSocketEvent.OPEN,
-      callback
+      (event) => {
+        if (event.url === this.url) {
+          callback();
+        }
+      }
     );
   }
 
@@ -67,7 +90,11 @@ class WebSocketWithSelfSignedCert {
   onMessage(callback: (message: string) => void): void {
     this.listeners[WebSocketEvent.MESSAGE] = this.eventEmitter.addListener(
       WebSocketEvent.MESSAGE,
-      callback
+      (event) => {
+        if (event.url === this.url) {
+          callback(event.message);
+        }
+      }
     );
   }
 
@@ -78,7 +105,11 @@ class WebSocketWithSelfSignedCert {
    */
   onBinaryMessage(callback: (data: Uint8Array) => void): void {
     this.listeners[WebSocketEvent.BINARY_MESSAGE] =
-      this.eventEmitter.addListener(WebSocketEvent.BINARY_MESSAGE, callback);
+      this.eventEmitter.addListener(WebSocketEvent.BINARY_MESSAGE, (event) => {
+        if (event.url === this.url) {
+          callback(event.message);
+        }
+      });
   }
 
   /**
@@ -89,7 +120,11 @@ class WebSocketWithSelfSignedCert {
   onClose(callback: () => void): void {
     this.listeners[WebSocketEvent.CLOSE] = this.eventEmitter.addListener(
       WebSocketEvent.CLOSE,
-      callback
+      (event) => {
+        if (event.url === this.url) {
+          callback();
+        }
+      }
     );
   }
 
@@ -101,12 +136,16 @@ class WebSocketWithSelfSignedCert {
   onError(callback: (error: string) => void): void {
     this.listeners[WebSocketEvent.ERROR] = this.eventEmitter.addListener(
       WebSocketEvent.ERROR,
-      callback
+      (event) => {
+        if (event.url === this.url) {
+          callback(event.error);
+        }
+      }
     );
   }
 
   /**
-   * Removes all registered event listeners.
+   * Removes all registered event listeners for this instance.
    * This is automatically called when the connection is closed.
    */
   private removeAllListeners(): void {

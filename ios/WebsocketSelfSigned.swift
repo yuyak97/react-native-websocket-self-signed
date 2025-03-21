@@ -4,8 +4,8 @@ import React
 @objc(WebSocketWithSelfSignedCert)
 class WebSocketWithSelfSignedCert: RCTEventEmitter {
 
-    private var webSocketTask: URLSessionWebSocketTask?
-    private var isConnected: Bool = false
+    private var webSocketTasks: [String: URLSessionWebSocketTask] = [:]
+    private var isConnectedMap: [String: Bool] = [:]
 
     // Add requiresMainQueueSetup in order to prevent the following warning:
     // WARN  Module WebSocketWithSelfSignedCert requires main queue setup since it overrides `init` but doesn't implement `requiresMainQueueSetup`.
@@ -25,7 +25,11 @@ class WebSocketWithSelfSignedCert: RCTEventEmitter {
             return
         }
 
-        // Create a URLRequest so we can add headers
+        if webSocketTasks[url] != nil {
+            reject("Already Connected", "A WebSocket is already connected to this URL", nil)
+            return
+        }
+
         var request = URLRequest(url: nsUrl)
         if let headers = headers {
             for (key, value) in headers {
@@ -36,78 +40,78 @@ class WebSocketWithSelfSignedCert: RCTEventEmitter {
         let sessionConfig = URLSessionConfiguration.default
         let session = URLSession(configuration: sessionConfig, delegate: self, delegateQueue: nil)
 
-        // Use request to create the WebSocketTask
-        webSocketTask = session.webSocketTask(with: request)
-        webSocketTask?.resume()
+        let webSocketTask = session.webSocketTask(with: request)
+        webSocketTask.resume()
 
-        // Set the connection state to true
-        isConnected = true
+        webSocketTasks[url] = webSocketTask
+        isConnectedMap[url] = true
 
-        // Start listening for messages
-        listenForMessages()
+        listenForMessages(url: url)
 
-        // Resolve the promise and emit the onOpen event
-        resolve("Connected!")
-        self.sendEvent(withName: "onOpen", body: nil)
+        resolve("Connected to \(url)!")
+        self.sendEvent(withName: "onOpen", body: ["url": url])
     }
 
     @objc
-    func send(_ message: String) {
-        guard isConnected, let webSocketTask = webSocketTask else {
-            self.sendEvent(withName: "onError", body: "WebSocket is not connected")
+    func send(_ url: String, message: String) {
+        guard let webSocketTask = webSocketTasks[url], isConnectedMap[url] == true else {
+            self.sendEvent(withName: "onError", body: ["url": url, "error": "WebSocket is not connected"])
             return
         }
+
         let message = URLSessionWebSocketTask.Message.string(message)
         webSocketTask.send(message) { error in
             if let error = error {
-                self.sendEvent(withName: "onError", body: error.localizedDescription)
+                self.sendEvent(withName: "onError", body: ["url": url, "error": error.localizedDescription])
             }
         }
     }
 
     @objc
-    func close() {
-        webSocketTask?.cancel(with: .normalClosure, reason: nil)
-        isConnected = false
-        webSocketTask = nil
+    func close(_ url: String) {
+        guard let webSocketTask = webSocketTasks[url] else {
+            self.sendEvent(withName: "onError", body: ["url": url, "error": "No active WebSocket for this URL"])
+            return
+        }
+
+        webSocketTask.cancel(with: .normalClosure, reason: nil)
+        webSocketTasks.removeValue(forKey: url)
+        isConnectedMap.removeValue(forKey: url)
+
         DispatchQueue.main.async {
-            guard let _ = self.bridge else { return }
-            self.sendEvent(withName: "onClose", body: nil)
+            self.sendEvent(withName: "onClose", body: ["url": url])
         }
     }
 
-   private func listenForMessages() {
-        webSocketTask?.receive { [weak self] result in
-        guard let self = self else { return }
+    private func listenForMessages(url: String) {
+        guard let webSocketTask = webSocketTasks[url] else { return }
 
-        switch result {
-        case .failure(let error):
-            self.isConnected = false
-            DispatchQueue.main.async {
-                guard let _ = self.bridge else { return }
-                self.sendEvent(withName: "onError", body: error.localizedDescription)
-            }
+        webSocketTask.receive { [weak self] result in
+            guard let self = self else { return }
 
-        case .success(let message):
-            DispatchQueue.main.async {
-                guard let _ = self.bridge else { return }
-
-                switch message {
-                case .string(let text):
-                    self.sendEvent(withName: "onMessage", body: text)
-                case .data(let data):
-                    self.sendEvent(withName: "onBinaryMessage", body: data.base64EncodedString())
-                @unknown default:
-                    // No-op, or handle future message types
-                    break
+            switch result {
+            case .failure(let error):
+                self.isConnectedMap[url] = false
+                DispatchQueue.main.async {
+                    self.sendEvent(withName: "onError", body: ["url": url, "error": error.localizedDescription])
                 }
-            }
 
-            // Continue listening for the next message
-            self.listenForMessages()
+            case .success(let message):
+                DispatchQueue.main.async {
+                    switch message {
+                    case .string(let text):
+                        self.sendEvent(withName: "onMessage", body: ["url": url, "message": text])
+                    case .data(let data):
+                        self.sendEvent(withName: "onBinaryMessage", body: ["url": url, "message": data.base64EncodedString()])
+                    @unknown default:
+                        break
+                    }
+                }
+
+                self.listenForMessages(url: url)
+            }
         }
     }
-}
 
     override func supportedEvents() -> [String]! {
         return ["onOpen", "onMessage", "onClose", "onError", "onBinaryMessage"]

@@ -58,6 +58,126 @@ npx expo prebuild
 
 ## Usage
 
+### Version < 0.4.0
+
+From version 0.4.0, support for multiple concurrent WebSocket connections was added.
+Each connection is managed independently using `WebSocketWithSelfSignedCert.getInstance(url)`.
+
+<details>
+<summary>Example: Using multiple WebSocket connections</summary>
+
+```ts
+import WebSocketWithSelfSignedCert from 'react-native-websocket-self-signed';
+
+const [connected1, setConnected1] = useState<boolean>(false);
+const [connected2, setConnected2] = useState<boolean>(false);
+const [messages1, setMessages1] = useState<string[]>([]);
+const [messages2, setMessages2] = useState<string[]>([]);
+const [error1, setError1] = useState<string | null>(null);
+const [error2, setError2] = useState<string | null>(null);
+const [payload, setPayload] = useState<string>('Hello, World!');
+
+const targetWebSocket1 =
+  Platform.OS === 'android' ? 'wss://10.0.2.2:8443' : 'wss://localhost:8443';
+const targetWebSocket2 = 'wss://echo.websocket.org';
+
+const ws1: WebSocketWithSelfSignedCert = useMemo(
+  () => WebSocketWithSelfSignedCert.getInstance(targetWebSocket1),
+  [targetWebSocket1]
+);
+
+const ws2: WebSocketWithSelfSignedCert = useMemo(
+  () => WebSocketWithSelfSignedCert.getInstance(targetWebSocket2),
+  [targetWebSocket2]
+);
+
+const connectToWebSocket = useCallback(
+  (
+    ws: WebSocketWithSelfSignedCert,
+    setConnected: React.Dispatch<React.SetStateAction<boolean>>,
+    setMessages: React.Dispatch<React.SetStateAction<string[]>>,
+    setError: React.Dispatch<React.SetStateAction<string | null>>,
+    target: string
+  ) => {
+    setError(null);
+
+    ws.onOpen(() => {
+      console.log(`WebSocket connection opened: ${target}`);
+      setConnected(true);
+    });
+
+    ws.onMessage((message: string) => {
+      console.log(`Received message from ${target}:`, message);
+      setMessages((prev) => [...prev, message]);
+    });
+
+    ws.onClose(() => {
+      console.log(`WebSocket connection closed: ${target}`);
+      setConnected(false);
+    });
+
+    ws.onError((err: string) => {
+      console.error(`Failed to connect to ${target}:`, err);
+      setError(`Failed to connect: ${err}`);
+    });
+
+    ws.connect({ Authorization: 'Bearer your_token' })
+      .then(() => {
+        console.log(`Connected to ${target}`);
+        setConnected(true);
+      })
+      .catch((err) => {
+        console.error(`Failed to connect to ${target}: `, err);
+        setError(`Failed to connect: ${err}`);
+      });
+
+    return () => {
+      ws.close();
+    };
+  },
+  []
+);
+
+useEffect(() => {
+  const cleanup1 = connectToWebSocket(
+    ws1,
+    setConnected1,
+    setMessages1,
+    setError1,
+    targetWebSocket1
+  );
+  const cleanup2 = connectToWebSocket(
+    ws2,
+    setConnected2,
+    setMessages2,
+    setError2,
+    targetWebSocket2
+  );
+
+  return () => {
+    cleanup1();
+    cleanup2();
+  };
+}, [connectToWebSocket, ws1, ws2, targetWebSocket1, targetWebSocket2]);
+
+const sendMessage1 = () => {
+  console.log('Sending message to WebSocket 1:', payload);
+  ws1.send(payload);
+};
+
+const sendMessage2 = () => {
+  console.log('Sending message to WebSocket 2:', payload);
+  ws2.send(payload);
+};
+```
+
+</details>
+
+### Version >= 0.3.1
+
+<details>
+<summary>Example: for version less than 0.3.1</summary>
+
 ```ts
 import WebSocketWithSelfSignedCert from 'react-native-websocket-self-signed';
 
@@ -99,8 +219,9 @@ return () => {
 };
 
 wsWithSelfSignedCert.send("message"));
-
 ```
+
+</details>
 
 You can check this whole example here.
 
