@@ -68,6 +68,34 @@ class WebSocketWithSelfSignedCert: RCTEventEmitter {
     }
 
     @objc
+    func sendBinaryBase64(_ url: String, base64String: String) {
+        guard let webSocketTask = webSocketTasks[url], isConnectedMap[url] == true else {
+            self.sendEvent(withName: "onError", body: ["url": url, "error": "WebSocket is not connected"])
+            return
+        }
+    
+        guard let data = Data(base64Encoded: base64String) else {
+            self.sendEvent(withName: "onError", body: [
+                "url": url,
+                "error": "Invalid Base64 binary string"
+            ])
+            return
+        }
+    
+        let message = URLSessionWebSocketTask.Message.data(data)
+        webSocketTask.send(message) { [weak self] error in
+            guard let self = self else { return }
+            if let error = error {
+                self.sendEvent(withName: "onError", body: [
+                    "url": url,
+                    "error": error.localizedDescription
+                ])
+            }
+        }
+    }
+
+
+    @objc
     func close(_ url: String) {
         guard let webSocketTask = webSocketTasks[url] else {
             self.sendEvent(withName: "onError", body: ["url": url, "error": "No active WebSocket for this URL"])
