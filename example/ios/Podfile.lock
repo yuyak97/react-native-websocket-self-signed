@@ -1209,7 +1209,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - react-native-websocket-self-signed (0.3.0):
+  - react-native-websocket-self-signed (0.4.0):
     - DoubleConversion
     - glog
     - RCT-Folly (= 2024.01.01.00)
@@ -1473,7 +1473,7 @@ PODS:
     - React-logger (= 0.75.2)
     - React-perflogger (= 0.75.2)
     - React-utils (= 0.75.2)
-  - ReactNativeHost (0.5.2):
+  - ReactNativeHost (0.5.3):
     - DoubleConversion
     - glog
     - RCT-Folly (= 2024.01.01.00)
@@ -1739,7 +1739,7 @@ SPEC CHECKSUMS:
   React-logger: 62e11ad27cfcff0fcbfc5df93094f138ad5dd7fe
   React-Mapbuffer: 4a9b9131acbd8326b1f0e768d0ad63d981a4a92f
   React-microtasksnativemodule: ccc417be864683a4d582c47743195fee8d180b5a
-  react-native-websocket-self-signed: 2bc2509774acfd6864bc93a3437ba10c1d193803
+  react-native-websocket-self-signed: 78af06ef5cba143e6b230d7c397be534dcba45ef
   React-nativeconfig: 57781b79e11d5af7573e6f77cbf1143b71802a6d
   React-NativeModulesApple: 9a09e473e9682681756741cd6bc0e0a1e46549b1
   React-perflogger: 8a360ccf603de6ddbe9ff8f54383146d26e6c936
@@ -1765,7 +1765,7 @@ SPEC CHECKSUMS:
   React-utils: f468f00263b0933b3c7ddad6b4fcdabdf64c03e8
   ReactCodegen: 4b5d4cbd6127e2145938f84d843c8a1c995773bc
   ReactCommon: dc61f785340da60e57d469e2617f128e6a1cf7d5
-  ReactNativeHost: 2691b8a49f2d04d7847d229e3ca352123baca427
+  ReactNativeHost: a0f8045bae9cd4f134eda6d33282fdb77e2b0565
   ReactTestApp-DevSupport: 52ac76197e5accf579592aa3b9aa07fd0766f211
   ReactTestApp-Resources: 7db90c026cccdf40cfa495705ad436ccc4d64154
   SocketRocket: abac6f5de4d4d62d24e11868d7a2f427e0ef940d
@@ -1773,4 +1773,4 @@ SPEC CHECKSUMS:
 
 PODFILE CHECKSUM: 3caac3c0795207cd9ecd7869c0efcde5cdf898eb
 
-COCOAPODS: 1.16.2
+COCOAPODS: 1.15.2

@@ -1,4 +1,4 @@
-# 🧟react-native-websocket-self-signed
+# 💫 react-native-websocket-self-signed
 
 [![MIT License](https://img.shields.io/github/license/yuyak97/react-native-websocket-self-signed)](LICENSE)
 [![Package Version](https://img.shields.io/npm/v/react-native-websocket-self-signed)](https://www.npmjs.com/package/react-native-websocket-self-signed)

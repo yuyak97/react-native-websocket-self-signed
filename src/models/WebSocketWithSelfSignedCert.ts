@@ -58,6 +58,27 @@ class WebSocketWithSelfSignedCert {
   }
 
   /**
+   * Sends binary data through the WebSocket connection for the given URL.
+   *
+   * @param dataBase64 - Base64-encoded binary data to send to the server.
+   *
+   * @remarks
+   * The Base64 string provided here will be decoded into a byte array on the
+   * native layer (iOS: using `Data(base64Encoded:)`) before being sent through
+   * the WebSocket. This allows JavaScript to send binary payloads without
+   * handling raw byte arrays directly.
+   *
+   * If sending fails (e.g., the WebSocket is not connected, the Base64 string is
+   * invalid, or a native-layer error occurs), an `onError` event will be emitted.
+   */
+  sendBinaryBase64(dataBase64: string) {
+    WebSocketWithSelfSignedCertNativeModule.sendBinaryBase64(
+      this.url,
+      dataBase64
+    );
+  }
+
+  /**
    * Closes the WebSocket connection for the given URL and removes all event listeners.
    */
   close(): void {

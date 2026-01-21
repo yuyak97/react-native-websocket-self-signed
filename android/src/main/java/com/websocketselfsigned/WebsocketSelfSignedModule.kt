@@ -6,6 +6,8 @@ import okhttp3.*
 import okio.ByteString
 import java.security.cert.X509Certificate
 import javax.net.ssl.*
+import android.util.Base64
+import okio.ByteString.Companion.toByteString
 
 class WebSocketWithSelfSignedCertModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
 
@@ -148,6 +150,43 @@ class WebSocketWithSelfSignedCertModule(reactContext: ReactApplicationContext) :
         }
         ws.send(message)
     }
+
+    /**
+     * Send Base64-encoded binary data to the specified WebSocket.
+     * Example from JS:
+     *   WebSocketWithSelfSignedCert.sendBinaryBase64("wss://your-url", base64String)
+     */
+    @ReactMethod
+    fun sendBinaryBase64(url: String, base64String: String) {
+        val ws = webSockets[url]
+        if (ws == null) {
+            val params = Arguments.createMap()
+            params.putString("url", url)
+            params.putString("error", "WebSocket is not connected")
+            sendEvent("onError", params)
+            return
+        }
+    
+        try {
+            // Base64 -> ByteArray
+            val bytes = Base64.decode(base64String, Base64.DEFAULT)
+            // ByteArray -> ByteString
+            val byteString = bytes.toByteString(0, bytes.size)        
+            // Send binary
+            ws.send(byteString)
+        } catch (e: IllegalArgumentException) {
+            val params = Arguments.createMap()
+            params.putString("url", url)
+            params.putString("error", "Invalid Base64 binary string")
+            sendEvent("onError", params)
+        } catch (e: Exception) {
+            val params = Arguments.createMap()
+            params.putString("url", url)
+            params.putString("error", e.message ?: "Failed to send binary")
+            sendEvent("onError", params)
+        }
+    }
+
 
     /**
      * Close the WebSocket connection for the specified URL.

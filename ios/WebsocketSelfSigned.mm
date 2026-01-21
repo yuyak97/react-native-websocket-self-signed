@@ -8,6 +8,7 @@ RCT_EXTERN_METHOD(connect:(NSString *)url
                   resolver:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
 RCT_EXTERN_METHOD(send:(NSString *)url message:(NSString *)message)
+RCT_EXTERN_METHOD(sendBinaryBase64:(NSString *)url base64String:(NSString *)base64String)
 RCT_EXTERN_METHOD(close:(NSString *)url)
 
 @end

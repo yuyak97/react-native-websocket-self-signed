@@ -20,6 +20,14 @@ export interface WebSocketWithSelfSignedCertNativeModuleType {
   send(url: string, message: string): void;
 
   /**
+   * Sends data as base64 through the WebSocket connection for the given URL.
+   *
+   * @param url - The WebSocket server URL associated with the connection.
+   * @param data - base64 to send
+   */
+  sendBinaryBase64(url: string, data: string): void;
+
+  /**
    * Closes the WebSocket connection for the given URL.
    *
    * @param url - The WebSocket server URL associated with the connection.
