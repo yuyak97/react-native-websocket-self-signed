@@ -1,249 +1,166 @@
-package com.websocketwithselfsignedcert
+package com.websocketselfsigned
 
-import com.facebook.react.bridge.*
+import android.util.Base64
+import com.facebook.react.bridge.Arguments
+import com.facebook.react.bridge.Promise
+import com.facebook.react.bridge.ReactApplicationContext
+import com.facebook.react.bridge.ReadableMap
+import com.facebook.react.bridge.WritableMap
 import com.facebook.react.modules.core.DeviceEventManagerModule
 import okhttp3.*
 import okio.ByteString
+import okio.ByteString.Companion.toByteString
+import java.security.SecureRandom
 import java.security.cert.X509Certificate
 import javax.net.ssl.*
-import android.util.Base64
-import okio.ByteString.Companion.toByteString
 
-class WebSocketWithSelfSignedCertModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
+class WebsocketSelfSignedModule(reactContext: ReactApplicationContext) :
+  NativeWebsocketSelfSignedSpec(reactContext) {
 
-    // Map of URL -> WebSocket so we can handle multiple connections simultaneously
-    private val webSockets = mutableMapOf<String, WebSocket>()
+  companion object {
+    const val NAME = NativeWebsocketSelfSignedSpec.NAME
+  }
 
-    // Store the Promise for each connection (to resolve/reject after onOpen/onFailure)
-    private val connectionPromises = mutableMapOf<String, Promise>()
+  // URL -> WebSocket
+  private val webSockets = mutableMapOf<String, WebSocket>()
+  private val connectionPromises = mutableMapOf<String, Promise>()
+  private var listenerCount = 0
 
-    // A single OkHttpClient that trusts all certificates
-    private val client: OkHttpClient
+  private val client: OkHttpClient by lazy {
+    val trustAllCerts = arrayOf<TrustManager>(object : X509TrustManager {
+      override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+      override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+      override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
+    })
 
-    // Required for event emitter support
-    private var listenerCount = 0
+    val sslContext = SSLContext.getInstance("SSL")
+    sslContext.init(null, trustAllCerts, SecureRandom())
 
-    init {
-        // Create a TrustManager that trusts all certificates
-        val trustAllCerts = arrayOf<TrustManager>(object : X509TrustManager {
-            override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
-            override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
-            override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
-        })
+    OkHttpClient.Builder()
+      .sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
+      .hostnameVerifier { _, _ -> true }
+      .build()
+  }
 
-        // Install the all-trusting trust manager
-        val sslContext = SSLContext.getInstance("SSL")
-        sslContext.init(null, trustAllCerts, java.security.SecureRandom())
 
-        // Build an OkHttpClient that uses our custom SSL context
-        val builder = OkHttpClient.Builder()
-            .sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
-            .hostnameVerifier { _, _ -> true }
 
-        client = builder.build()
+  override fun connect(url: String, headers: ReadableMap?, promise: Promise) {
+    if (webSockets.containsKey(url)) {
+      promise.reject("AlreadyConnected", "A WebSocket is already connected to this URL.")
+      return
     }
 
-    override fun getName(): String {
-        return "WebSocketWithSelfSignedCert"
+    val requestBuilder = Request.Builder().url(url)
+    if (headers != null) {
+      val iterator = headers.keySetIterator()
+      while (iterator.hasNextKey()) {
+        val key = iterator.nextKey()
+        val value = headers.getString(key)
+        if (value != null) requestBuilder.addHeader(key, value)
+      }
     }
+    val request = requestBuilder.build()
 
-    /**
-     * Connect to the specified WebSocket URL with optional headers.
-     * Example from JS:
-     *   WebSocketWithSelfSignedCert.connect("wss://your-url", { Authorization: "Bearer token", "Custom-Header": "Value" })
-     */
-    @ReactMethod
-    fun connect(url: String, headers: ReadableMap, promise: Promise) {
-        // If there's already a websocket for this URL, reject immediately
-        if (webSockets.containsKey(url)) {
-            promise.reject("Already Connected", "A WebSocket is already connected to this URL.")
-            return
-        }
+    connectionPromises[url] = promise
 
-        // Build the request with optional headers
-        val requestBuilder = Request.Builder().url(url)
-        val iterator = headers.keySetIterator()
-        while (iterator.hasNextKey()) {
-            val key = iterator.nextKey()
-            val value = headers.getString(key)
-            if (value != null) {
-                requestBuilder.addHeader(key, value)
-            }
-        }
-        val request = requestBuilder.build()
+    client.newWebSocket(request, object : WebSocketListener() {
+      override fun onOpen(ws: WebSocket, response: Response) {
+        webSockets[url] = ws
+        connectionPromises[url]?.resolve("Connected to $url")
+        connectionPromises.remove(url)
+        emit("onOpen", mapOf("url" to url))
+      }
 
-        // Create a new WebSocket and store the promise (so we can resolve it in onOpen)
-        connectionPromises[url] = promise
-        val webSocket = client.newWebSocket(request, object : WebSocketListener() {
+      override fun onMessage(ws: WebSocket, text: String) {
+        emit("onMessage", mapOf("url" to url, "message" to text))
+      }
 
-            override fun onOpen(ws: WebSocket, response: Response) {
-                // Store the WebSocket in our map
-                webSockets[url] = ws
+      override fun onMessage(ws: WebSocket, bytes: ByteString) {
+        emit("onBinaryMessage", mapOf("url" to url, "message" to bytes.base64()))
+      }
 
-                // Resolve the promise now that the connection is open
-                connectionPromises[url]?.resolve("Connected to $url")
-                connectionPromises.remove(url)
+      override fun onClosing(ws: WebSocket, code: Int, reason: String) {
+        emit("onClose", mapOf("url" to url, "reason" to reason))
+        ws.close(1000, null)
+      }
 
-                // Also send an "onOpen" event to JS with the URL
-                sendEvent("onOpen", makeMap("url", url))
-            }
+      override fun onFailure(ws: WebSocket, t: Throwable, response: Response?) {
+        connectionPromises[url]?.reject("WebSocketError", t.message, t)
+        connectionPromises.remove(url)
 
-            override fun onMessage(ws: WebSocket, text: String) {
-                // Send an "onMessage" event to JS with the URL and message
-                val params = Arguments.createMap()
-                params.putString("url", url)
-                params.putString("message", text)
-                sendEvent("onMessage", params)
-            }
-
-            override fun onMessage(ws: WebSocket, bytes: ByteString) {
-                // For binary data, send base64-encoded
-                val base64Data = bytes.base64()
-                val params = Arguments.createMap()
-                params.putString("url", url)
-                params.putString("message", base64Data)
-                sendEvent("onBinaryMessage", params)
-            }
-
-            override fun onClosing(ws: WebSocket, code: Int, reason: String) {
-                // Notify JS that the socket is closing
-                val params = Arguments.createMap()
-                params.putString("url", url)
-                params.putString("reason", reason)
-                sendEvent("onClose", params)
-
-                // We can close it immediately here
-                ws.close(1000, null)
-            }
-
-            override fun onFailure(ws: WebSocket, t: Throwable, response: Response?) {
-                // If the onOpen hasn't happened yet, reject the promise
-                connectionPromises[url]?.reject("WebSocket Error", t)
-                connectionPromises.remove(url)
-
-                // Send an "onError" event to JS
-                val params = Arguments.createMap()
-                params.putString("url", url)
-                params.putString("error", t.message ?: "Unknown error")
-                sendEvent("onError", params)
-
-                // Remove this socket from the map
-                webSockets.remove(url)
-            }
-        })
-    }
-
-    /**
-     * Send a text message to the specified WebSocket.
-     * Example from JS:
-     *   WebSocketWithSelfSignedCert.send("wss://your-url", "Hello!")
-     */
-    @ReactMethod
-    fun send(url: String, message: String) {
-        val ws = webSockets[url]
-        if (ws == null) {
-            val params = Arguments.createMap()
-            params.putString("url", url)
-            params.putString("error", "WebSocket is not connected")
-            sendEvent("onError", params)
-            return
-        }
-        ws.send(message)
-    }
-
-    /**
-     * Send Base64-encoded binary data to the specified WebSocket.
-     * Example from JS:
-     *   WebSocketWithSelfSignedCert.sendBinaryBase64("wss://your-url", base64String)
-     */
-    @ReactMethod
-    fun sendBinaryBase64(url: String, base64String: String) {
-        val ws = webSockets[url]
-        if (ws == null) {
-            val params = Arguments.createMap()
-            params.putString("url", url)
-            params.putString("error", "WebSocket is not connected")
-            sendEvent("onError", params)
-            return
-        }
-    
-        try {
-            // Base64 -> ByteArray
-            val bytes = Base64.decode(base64String, Base64.DEFAULT)
-            // ByteArray -> ByteString
-            val byteString = bytes.toByteString(0, bytes.size)        
-            // Send binary
-            ws.send(byteString)
-        } catch (e: IllegalArgumentException) {
-            val params = Arguments.createMap()
-            params.putString("url", url)
-            params.putString("error", "Invalid Base64 binary string")
-            sendEvent("onError", params)
-        } catch (e: Exception) {
-            val params = Arguments.createMap()
-            params.putString("url", url)
-            params.putString("error", e.message ?: "Failed to send binary")
-            sendEvent("onError", params)
-        }
-    }
-
-
-    /**
-     * Close the WebSocket connection for the specified URL.
-     * Example from JS:
-     *   WebSocketWithSelfSignedCert.close("wss://your-url")
-     */
-    @ReactMethod
-    fun close(url: String) {
-        val ws = webSockets[url]
-        if (ws == null) {
-            val params = Arguments.createMap()
-            params.putString("url", url)
-            params.putString("error", "No active WebSocket for this URL")
-            sendEvent("onError", params)
-            return
-        }
-
-        // Normal closure
-        ws.close(1000, "Normal closure")
-
-        // Remove from map
+        emit("onError", mapOf("url" to url, "error" to (t.message ?: "Unknown error")))
         webSockets.remove(url)
+      }
+    })
+  }
 
-        // Send onClose event
-        val params = Arguments.createMap()
-        params.putString("url", url)
-        sendEvent("onClose", params)
+
+  /**
+    * Send a text message to the specified WebSocket.
+    * Example from JS:
+    *   WebSocketWithSelfSignedCert.send("wss://your-url", "Hello!")
+    */
+  override fun send(url: String, message: String) {
+    val ws = webSockets[url]
+    if (ws == null) {
+      emit("onError", mapOf("url" to url, "error" to "WebSocket is not connected"))
+      return
+    }
+    ws.send(message)
+  }
+
+  /**
+  * Send Base64-encoded binary data to the specified WebSocket.
+  * Example from JS:
+  *   WebSocketWithSelfSignedCert.sendBinaryBase64("wss://your-url", base64String)
+  */
+  override fun sendBinaryBase64(url: String, base64String: String) {
+    val ws = webSockets[url]
+    if (ws == null) {
+      emit("onError", mapOf("url" to url, "error" to "WebSocket is not connected"))
+      return
     }
 
-    /**
-     * Event Emitter helpers
-     */
-     
-    private fun sendEvent(eventName: String, params: Any?) {
-        reactApplicationContext
-            .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
-            .emit(eventName, params)
+    try {
+      val bytes = Base64.decode(base64String, Base64.DEFAULT)
+      val byteString = bytes.toByteString(0, bytes.size)
+      ws.send(byteString)
+    } catch (e: IllegalArgumentException) {
+      emit("onError", mapOf("url" to url, "error" to "Invalid Base64 binary string"))
+    } catch (e: Exception) {
+      emit("onError", mapOf("url" to url, "error" to (e.message ?: "Failed to send binary")))
     }
+  }
 
-    // Helper to build a React Native readable map
-    private fun makeMap(key: String, value: String): WritableMap {
-        val map = Arguments.createMap()
-        map.putString(key, value)
-        return map
-    }
 
-    // For NativeEventEmitter in React Native
-    @ReactMethod
-    fun addListener(eventName: String) {
-        listenerCount += 1
+  override fun close(url: String) {
+    val ws = webSockets[url]
+    if (ws == null) {
+      emit("onError", mapOf("url" to url, "error" to "No active WebSocket for this URL"))
+      return
     }
+    ws.close(1000, "Normal closure")
+    webSockets.remove(url)
+    emit("onClose", mapOf("url" to url))
+  }
 
-    @ReactMethod
-    fun removeListeners(count: Int) {
-        listenerCount -= count
-        if (listenerCount < 0) {
-            listenerCount = 0
-        }
-    }
+  override fun addListener(eventName: String) {
+    listenerCount += 1
+  }
+
+  override fun removeListeners(count: Double) {
+    listenerCount -= count.toInt()
+    if (listenerCount < 0) listenerCount = 0
+  }
+
+  private fun emit(eventName: String, payload: Map<String, String>) {
+    if (listenerCount <= 0) return
+
+    val params: WritableMap = Arguments.createMap()
+    payload.forEach { (k, v) -> params.putString(k, v) }
+
+    reactApplicationContext
+      .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
+      .emit(eventName, params)
+  }
 }
