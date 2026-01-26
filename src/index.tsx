@@ -1,4 +1,4 @@
-import { NativeEventEmitter, type EmitterSubscription } from 'react-native';
+import { NativeEventEmitter, type EventSubscription } from 'react-native';
 import { WebsocketSelfSignedNativeModule } from './NativeWebsocketSelfSigned';
 
 export enum WebSocketEvent {
@@ -15,7 +15,7 @@ export enum WebSocketEvent {
  */
 class WebSocketWithSelfSignedCert {
   private eventEmitter: NativeEventEmitter;
-  private listeners: { [key in WebSocketEvent]?: EmitterSubscription } = {};
+  private listeners: { [key in WebSocketEvent]?: EventSubscription } = {};
   private static instances: Map<string, WebSocketWithSelfSignedCert> =
     new Map();
 
