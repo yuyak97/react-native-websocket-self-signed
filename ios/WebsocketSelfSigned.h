@@ -1,5 +1,5 @@
+#import <React/RCTEventEmitter.h>
 #import <WebsocketSelfSignedSpec/WebsocketSelfSignedSpec.h>
 
-@interface WebsocketSelfSigned : NSObject <NativeWebsocketSelfSignedSpec>
-
+@interface WebsocketSelfSigned : RCTEventEmitter <NativeWebsocketSelfSignedSpec>
 @end
